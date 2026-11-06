@@ -1,0 +1,45 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Ringkasan";
+}
+<div class="app-shell">
+    <aside class="sidebar">
+        <a class="brand" asp-page="/Index"><span class="brand-mark">n</span><span class="brand-copy"><strong>nusa</strong><small>PEOPLE &amp; PAYROLL</small></span></a>
+        <div class="nav-label">MENU</div>
+        <nav class="side-nav" aria-label="Menu utama">
+            <a class="active" asp-page="/Index">Ringkasan</a>
+            <a asp-page="/Employees/Index">Karyawan</a>
+            <a asp-page="/Operations/Index">Absensi &amp; cuti</a>
+            <a asp-page="/Payroll/Index">Penggajian</a>
+            @if (User.IsInRole("Admin")) { <a asp-page="/Users/Index">Pengguna &amp; akses</a> }
+        </nav>
+        <div class="sidebar-bottom">
+            <div class="profile"><span class="profile-copy"><strong>@User.Identity?.Name</strong><small>@Model.UserRoles</small></span></div>
+            <form method="post" asp-page="/Account/Login" asp-page-handler="Logout"><button class="button button-secondary" type="submit">Keluar</button></form>
+        </div>
+    </aside>
+    <main class="main-area">
+        <header class="topbar"><strong>Ringkasan</strong><span>HR &amp; Payroll</span></header>
+        <div class="page-content">
+            <section class="page-heading"><div><div class="eyebrow">PEOPLE OPERATIONS</div><h1>Ringkasan</h1><p>Data aplikasi HR/payroll perusahaan.</p></div></section>
+            <div class="notice"><strong>Catatan payroll:</strong> PPh 21 dan BPJS dimasukkan sebagai nominal yang sudah diverifikasi Finance. Aplikasi belum menghitung kewajiban legal otomatis.</div>
+            <section class="metric-grid">
+                <article class="metric-card"><div class="metric-top">Karyawan aktif</div><div class="metric-value">@Model.ActiveEmployees</div><div class="metric-foot">Data karyawan tersimpan</div></article>
+                <article class="metric-card"><div class="metric-top">Periode payroll</div><div class="metric-value">@Model.PayrollPeriods</div><div class="metric-foot">Periode yang telah dibuat</div></article>
+                <article class="metric-card"><div class="metric-top">Payroll terakhir</div><div class="metric-value">@((Model.LatestPeriod is null) ? "—" : Model.LatestPeriod.EndDate.ToString("dd MMM yyyy"))</div><div class="metric-foot">@(Model.LatestPeriod?.Status.ToString() ?? "Belum ada periode")</div></article>
+                <article class="metric-card"><div class="metric-top">Estimasi bersih periode terakhir</div><div class="metric-value">@Model.LatestNetTotal.ToString("C0", System.Globalization.CultureInfo.GetCultureInfo("id-ID"))</div><div class="metric-foot">Tinjau rincian sebelum menyetujui</div></article>
+            </section>
+            <section class="content-card">
+                <h2>Mulai menggunakan aplikasi</h2>
+                <ol>
+                    <li>Tambahkan karyawan satu per satu atau impor CSV pada halaman Karyawan.</li>
+                    <li>Buat periode payroll tanggal 21 bulan sebelumnya sampai tanggal 20 bulan berjalan.</li>
+                    <li>Finance mengisi nominal potongan PPh 21/BPJS yang sudah dihitung dan diverifikasi, lalu tinjau dan setujui payroll.</li>
+                </ol>
+                <a class="button button-primary" asp-page="/Employees/Index">Kelola karyawan</a>
+                <a class="button button-secondary" asp-page="/Payroll/Index">Buka payroll</a>
+            </section>
+        </div>
+    </main>
+</div>

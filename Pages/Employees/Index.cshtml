@@ -1,0 +1,84 @@
+@page
+@model PayrollDashboard.Pages.Employees.IndexModel
+@{
+    ViewData["Title"] = "Karyawan";
+}
+<div class="app-shell">
+    <aside class="sidebar">
+        <a class="brand" asp-page="/Index"><span class="brand-mark">n</span><span class="brand-copy"><strong>nusa</strong><small>PEOPLE &amp; PAYROLL</small></span></a>
+        <nav class="side-nav" aria-label="Menu utama"><a asp-page="/Index">Ringkasan</a><a class="active" asp-page="/Employees/Index">Karyawan</a><a asp-page="/Operations/Index">Absensi &amp; cuti</a><a asp-page="/Payroll/Index">Penggajian</a>@if (User.IsInRole("Admin")) { <a asp-page="/Users/Index">Pengguna &amp; akses</a> }</nav>
+        <div class="sidebar-bottom"><span>@User.Identity?.Name</span><form method="post" asp-page="/Account/Login" asp-page-handler="Logout"><button class="button button-secondary" type="submit">Keluar</button></form></div>
+    </aside>
+    <main class="main-area">
+        <header class="topbar"><strong>Karyawan</strong><a asp-page="/Index">Ringkasan</a></header>
+        <div class="page-content">
+            <section class="page-heading"><div><div class="eyebrow">DATA SDM</div><h1>Karyawan</h1><p>@Model.Employees.Count karyawan terdaftar. Karyawan nonaktif tidak ikut payroll baru.</p></div></section>
+            @if (Model.Message is not null) { <div class="notice">@Model.Message</div> }
+            <div asp-validation-summary="ModelOnly" class="validation"></div>
+            <div class="two-column">
+                <section class="content-card">
+                    <h2>Tambah karyawan</h2>
+                    <form method="post" asp-page-handler="Add" class="form-grid">
+                        <label asp-for="Input.EmployeeNumber">Nomor karyawan<input asp-for="Input.EmployeeNumber" /></label>
+                        <span asp-validation-for="Input.EmployeeNumber" class="validation"></span>
+                        <label asp-for="Input.FullName">Nama lengkap<input asp-for="Input.FullName" /></label>
+                        <span asp-validation-for="Input.FullName" class="validation"></span>
+                        <label asp-for="Input.Department">Departemen<input asp-for="Input.Department" /></label>
+                        <label asp-for="Input.Position">Jabatan<input asp-for="Input.Position" /></label>
+                        <label asp-for="Input.Email">Email<input asp-for="Input.Email" type="email" /></label>
+                        <label asp-for="Input.MonthlySalary">Gaji bulanan (Rp)<input asp-for="Input.MonthlySalary" type="number" min="0" step="1000" /></label>
+                        <label asp-for="Input.JoinDate">Tanggal mulai<input asp-for="Input.JoinDate" type="date" /></label>
+                        <button class="button button-primary" type="submit">Simpan karyawan</button>
+                    </form>
+                </section>
+                <section class="content-card">
+                    <h2>Impor dari CSV</h2>
+                    <p>Gunakan CSV UTF-8 dengan header: <code>employeeNumber,fullName,department,position,email,monthlySalary,joinDate</code>.</p>
+                    <p>Nomor karyawan duplikat dilewati. Gaji harus berupa angka tanpa pemisah ribuan; tanggal gunakan YYYY-MM-DD. Batas ukuran 5 MB.</p>
+                    <form method="post" asp-page-handler="Import" enctype="multipart/form-data">
+                        <label for="csvFile">Pilih file CSV</label>
+                        <input id="csvFile" asp-for="CsvFile" type="file" accept=".csv,text/csv" />
+                        <span asp-validation-for="CsvFile" class="validation"></span>
+                        <button class="button button-secondary" type="submit">Impor karyawan</button>
+                    </form>
+                    @if (Model.Errors.Count > 0)
+                    {
+                        <div class="validation"><strong>Baris yang perlu diperbaiki:</strong><ul>@foreach (var error in Model.Errors) { <li>@error</li> }</ul></div>
+                    }
+                </section>
+            </div>
+            <section class="content-card">
+                <div class="panel-heading"><h2>Daftar karyawan</h2><a class="button button-secondary" asp-page-handler="Export">Ekspor CSV</a></div>
+                <div class="table-wrap"><table class="data-table">
+                    <thead><tr><th>Nomor</th><th>Nama</th><th>Departemen</th><th>Jabatan</th><th>Gaji bulanan</th><th>Status</th><th>Aksi</th></tr></thead>
+                    <tbody>
+                    @foreach (var employee in Model.Employees)
+                    {
+                        <tr>
+                            <td>@employee.EmployeeNumber</td><td>@employee.FullName</td><td>@employee.Department</td><td>@employee.Position</td>
+                            <td>@employee.MonthlySalary.ToString("C0", System.Globalization.CultureInfo.GetCultureInfo("id-ID"))</td>
+                            <td>@(employee.IsActive ? "Aktif" : "Nonaktif")</td>
+                            <td>
+                                <details><summary>Ubah</summary>
+                                    <form method="post" asp-page-handler="Update" class="amount-form stacked">
+                                        <input type="hidden" name="id" value="@employee.Id" />
+                                        <label>Nomor<input name="Edit.EmployeeNumber" value="@employee.EmployeeNumber" required maxlength="30" /></label>
+                                        <label>Nama<input name="Edit.FullName" value="@employee.FullName" required maxlength="150" /></label>
+                                        <label>Departemen<input name="Edit.Department" value="@employee.Department" maxlength="100" /></label>
+                                        <label>Jabatan<input name="Edit.Position" value="@employee.Position" maxlength="100" /></label>
+                                        <label>Email<input name="Edit.Email" value="@employee.Email" type="email" maxlength="254" /></label>
+                                        <label>Gaji bulanan<input name="Edit.MonthlySalary" value="@employee.MonthlySalary.ToString(System.Globalization.CultureInfo.InvariantCulture)" type="number" min="0" step="1000" required /></label>
+                                        <label>Tanggal mulai<input name="Edit.JoinDate" value="@employee.JoinDate.ToString("yyyy-MM-dd")" type="date" required /></label>
+                                        <button class="button button-secondary" type="submit">Simpan perubahan</button>
+                                    </form>
+                                </details>
+                                <form method="post" asp-page-handler="Toggle"><input type="hidden" name="id" value="@employee.Id" /><button class="button button-secondary" type="submit">@(employee.IsActive ? "Nonaktifkan" : "Aktifkan")</button></form>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table></div>
+            </section>
+        </div>
+    </main>
+</div>

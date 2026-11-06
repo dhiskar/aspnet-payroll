@@ -1,0 +1,40 @@
+@page
+@model PayrollDashboard.Pages.MyAccount.IndexModel
+@{
+    ViewData["Title"] = "Akun karyawan";
+    var culture = System.Globalization.CultureInfo.GetCultureInfo("id-ID");
+}
+<main class="page-content employee-portal">
+    <header class="portal-header"><a class="brand" asp-page="/MyAccount/Index"><span class="brand-mark">n</span><span class="brand-copy"><strong>nusa</strong><small>PORTAL KARYAWAN</small></span></a><form method="post" asp-page="/Account/Login" asp-page-handler="Logout"><button class="button button-secondary" type="submit">Keluar</button></form></header>
+    <section class="page-heading"><div><div class="eyebrow">PORTAL KARYAWAN</div><h1>Halo, @(Model.Employee?.FullName ?? User.Identity?.Name)</h1><p>@Model.Employee?.EmployeeNumber · @Model.Employee?.Department</p></div></section>
+    @if (Model.Message is not null) { <div class="notice">@Model.Message</div> }
+    <div asp-validation-summary="ModelOnly" class="validation"></div>
+    <section class="two-column">
+        <article class="content-card">
+            <h2>Ajukan cuti</h2>
+            <form method="post" asp-page-handler="Leave" class="form-grid">
+                <label asp-for="Input.LeaveType">Jenis<select asp-for="Input.LeaveType"><option value="Annual">Tahunan</option><option value="Sick">Sakit</option><option value="Unpaid">Tanpa dibayar</option><option value="Other">Lainnya</option></select></label>
+                <label asp-for="Input.StartDate">Mulai<input asp-for="Input.StartDate" type="date" /></label>
+                <label asp-for="Input.EndDate">Sampai<input asp-for="Input.EndDate" type="date" /></label>
+                <button class="button button-primary" type="submit">Kirim permohonan</button>
+            </form>
+        </article>
+        <article class="content-card">
+            <h2>Permohonan cuti saya</h2>
+            <div class="table-wrap"><table class="data-table"><thead><tr><th>Jenis</th><th>Tanggal</th><th>Status</th></tr></thead><tbody>
+                @foreach (var request in Model.LeaveRequests) { <tr><td>@request.LeaveType</td><td>@request.StartDate.ToString("dd MMM yyyy") – @request.EndDate.ToString("dd MMM yyyy")</td><td>@request.Status</td></tr> }
+            </tbody></table></div>
+        </article>
+    </section>
+    <section class="content-card">
+        <h2>Slip gaji yang telah disetujui</h2>
+        <p>Data hanya ditampilkan setelah payroll disetujui.</p>
+        <div class="table-wrap"><table class="data-table"><thead><tr><th>Periode</th><th>Gaji pokok</th><th>Penyesuaian</th><th>Tunjangan</th><th>Potongan</th><th>Gaji bersih</th></tr></thead><tbody>
+            @foreach (var item in Model.Payslips)
+            {
+                var deductionTotal = item.OtherDeductions + item.Pph21 + item.BpjsEmployeeContribution;
+                <tr><td>@item.PayrollPeriod.StartDate.ToString("dd MMM yyyy") – @item.PayrollPeriod.EndDate.ToString("dd MMM yyyy")</td><td>@item.BaseSalary.ToString("C0", culture)</td><td>@item.SalaryAdjustment.ToString("C0", culture)</td><td>@item.Allowances.ToString("C0", culture)</td><td>@deductionTotal.ToString("C0", culture)</td><td><strong>@item.NetPay.ToString("C0", culture)</strong></td></tr>
+            }
+        </tbody></table></div>
+    </section>
+</main>

@@ -1,0 +1,63 @@
+@page
+@model PayrollDashboard.Pages.Operations.IndexModel
+@{
+    ViewData["Title"] = "Absensi & cuti";
+}
+<div class="app-shell">
+    <aside class="sidebar">
+        <a class="brand" asp-page="/Index"><span class="brand-mark">n</span><span class="brand-copy"><strong>nusa</strong><small>PEOPLE &amp; PAYROLL</small></span></a>
+        <nav class="side-nav" aria-label="Menu utama"><a asp-page="/Index">Ringkasan</a><a asp-page="/Employees/Index">Karyawan</a><a class="active" asp-page="/Operations/Index">Absensi &amp; cuti</a><a asp-page="/Payroll/Index">Penggajian</a>@if (User.IsInRole("Admin")) { <a asp-page="/Users/Index">Pengguna &amp; akses</a> }</nav>
+        <div class="sidebar-bottom"><span>@User.Identity?.Name</span><form method="post" asp-page="/Account/Login" asp-page-handler="Logout"><button class="button button-secondary" type="submit">Keluar</button></form></div>
+    </aside>
+    <main class="main-area">
+        <header class="topbar"><strong>Absensi &amp; cuti</strong><a asp-page="/Index">Ringkasan</a></header>
+        <div class="page-content">
+            <section class="page-heading"><div><div class="eyebrow">OPERASIONAL</div><h1>Absensi &amp; cuti</h1><p>Catat status kerja, jam lembur, dan persetujuan cuti.</p></div></section>
+            <div class="notice">Jam lembur dicatat, tetapi tarif dan perhitungan pembayarannya belum dikonfigurasi. Kehadiran/cuti tidak otomatis mengubah gaji atau nominal payroll.</div>
+            @if (Model.Message is not null) { <div class="notice">@Model.Message</div> }
+            <div asp-validation-summary="ModelOnly" class="validation"></div>
+            <div class="two-column">
+                <section class="content-card">
+                    <h2>Catat absensi/lembur</h2>
+                    <form method="post" asp-page-handler="Attendance" class="form-grid">
+                        <label asp-for="Attendance.EmployeeId">Karyawan<select asp-for="Attendance.EmployeeId"><option value="">Pilih karyawan</option>@foreach (var employee in Model.Employees) { <option value="@employee.Id">@employee.EmployeeNumber — @employee.FullName</option> }</select></label>
+                        <label asp-for="Attendance.WorkDate">Tanggal<input asp-for="Attendance.WorkDate" type="date" /></label>
+                        <label asp-for="Attendance.Status">Status<select asp-for="Attendance.Status"><option value="Present">Hadir</option><option value="Absent">Tidak hadir</option><option value="Sick">Sakit</option><option value="Leave">Cuti</option></select></label>
+                        <label asp-for="Attendance.OvertimeHours">Lembur (jam)<input asp-for="Attendance.OvertimeHours" type="number" min="0" max="24" step="0.25" /></label>
+                        <button class="button button-primary" type="submit">Simpan absensi</button>
+                    </form>
+                </section>
+                <section class="content-card">
+                    <h2>Catat permohonan cuti</h2>
+                    <form method="post" asp-page-handler="Leave" class="form-grid">
+                        <label asp-for="Leave.EmployeeId">Karyawan<select asp-for="Leave.EmployeeId"><option value="">Pilih karyawan</option>@foreach (var employee in Model.Employees) { <option value="@employee.Id">@employee.EmployeeNumber — @employee.FullName</option> }</select></label>
+                        <label asp-for="Leave.LeaveType">Jenis<select asp-for="Leave.LeaveType"><option value="Annual">Tahunan</option><option value="Sick">Sakit</option><option value="Unpaid">Tanpa dibayar</option><option value="Other">Lainnya</option></select></label>
+                        <label asp-for="Leave.StartDate">Mulai<input asp-for="Leave.StartDate" type="date" /></label>
+                        <label asp-for="Leave.EndDate">Sampai<input asp-for="Leave.EndDate" type="date" /></label>
+                        <button class="button button-primary" type="submit">Ajukan/catat cuti</button>
+                    </form>
+                </section>
+            </div>
+            <section class="content-card">
+                <h2>Permohonan cuti terbaru</h2>
+                <div class="table-wrap"><table class="data-table"><thead><tr><th>Karyawan</th><th>Jenis</th><th>Rentang</th><th>Status</th><th>Keputusan</th></tr></thead><tbody>
+                    @foreach (var request in Model.LeaveRequests)
+                    {
+                        <tr><td>@request.Employee.EmployeeNumber — @request.Employee.FullName</td><td>@request.LeaveType</td><td>@request.StartDate.ToString("dd MMM yyyy") – @request.EndDate.ToString("dd MMM yyyy")</td><td>@request.Status</td><td>
+                        @if (request.Status == PayrollDashboard.Models.LeaveStatus.Pending)
+                        {
+                            <form method="post" asp-page-handler="DecideLeave" class="inline-actions"><input type="hidden" name="id" value="@request.Id" /><button class="button button-primary" name="approve" value="true" type="submit">Setujui</button><button class="button button-secondary" name="approve" value="false" type="submit">Tolak</button></form>
+                        }
+                        </td></tr>
+                    }
+                </tbody></table></div>
+            </section>
+            <section class="content-card">
+                <h2>Absensi terbaru</h2>
+                <div class="table-wrap"><table class="data-table"><thead><tr><th>Tanggal</th><th>Karyawan</th><th>Status</th><th>Lembur (jam)</th></tr></thead><tbody>
+                    @foreach (var record in Model.AttendanceRecords) { <tr><td>@record.WorkDate.ToString("dd MMM yyyy")</td><td>@record.Employee.EmployeeNumber — @record.Employee.FullName</td><td>@record.Status</td><td>@record.OvertimeHours.ToString("N2")</td></tr> }
+                </tbody></table></div>
+            </section>
+        </div>
+    </main>
+</div>

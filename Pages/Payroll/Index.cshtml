@@ -1,0 +1,113 @@
+@page
+@model PayrollDashboard.Pages.Payroll.IndexModel
+@{
+    ViewData["Title"] = "Penggajian";
+    var culture = System.Globalization.CultureInfo.GetCultureInfo("id-ID");
+}
+<div class="app-shell">
+    <aside class="sidebar">
+        <a class="brand" asp-page="/Index"><span class="brand-mark">n</span><span class="brand-copy"><strong>nusa</strong><small>PEOPLE &amp; PAYROLL</small></span></a>
+        <nav class="side-nav" aria-label="Menu utama"><a asp-page="/Index">Ringkasan</a><a asp-page="/Employees/Index">Karyawan</a><a asp-page="/Operations/Index">Absensi &amp; cuti</a><a class="active" asp-page="/Payroll/Index">Penggajian</a>@if (User.IsInRole("Admin")) { <a asp-page="/Users/Index">Pengguna &amp; akses</a> }</nav>
+        <div class="sidebar-bottom"><span>@User.Identity?.Name</span><form method="post" asp-page="/Account/Login" asp-page-handler="Logout"><button class="button button-secondary" type="submit">Keluar</button></form></div>
+    </aside>
+    <main class="main-area">
+        <header class="topbar"><strong>Penggajian</strong><a asp-page="/Index">Ringkasan</a></header>
+        <div class="page-content">
+            <section class="page-heading"><div><div class="eyebrow">PEOPLE OPERATIONS / PAYROLL</div><h1>Penggajian</h1><p>Siklus 21 bulan sebelumnya–20 bulan berjalan; tanggal pembayaran awal tanggal 30.</p></div>
+                <form method="post" asp-page-handler="Create"><button class="button button-primary" type="submit">Buat periode payroll</button></form>
+            </section>
+            @if (Model.Message is not null) { <div class="notice">@Model.Message</div> }
+            <div class="notice"><strong>Validasi Finance:</strong> prorata/penyesuaian gaji, lembur, PPh 21, dan BPJS dimasukkan sebagai nominal yang sudah diverifikasi. Sistem tidak menghitung prorata shift, tarif lembur, pajak, atau iuran otomatis. Pastikan hasil payroll ditinjau sebelum persetujuan/pembayaran.</div>
+            @if (Model.Periods.Count > 0)
+            {
+                <section class="content-card">
+                    <form method="get" class="period-picker">
+                        <label for="periodId">Periode</label>
+                        <select id="periodId" name="periodId" onchange="this.form.submit()">
+                            @foreach (var period in Model.Periods)
+                            {
+                                <option value="@period.Id" selected="@(Model.PeriodId == period.Id)">@period.StartDate.ToString("dd MMM yyyy") – @period.EndDate.ToString("dd MMM yyyy") (@period.Status)</option>
+                            }
+                        </select>
+                    </form>
+                </section>
+            }
+            @if (Model.SelectedPeriod is { } period)
+            {
+                var grossTotal = period.Entries.Sum(entry => entry.BaseSalary + entry.SalaryAdjustment + entry.Allowances);
+                var netTotal = period.Entries.Sum(entry => entry.NetPay);
+                <section class="metric-grid">
+                    <article class="metric-card"><div class="metric-top">Karyawan</div><div class="metric-value">@period.Entries.Count</div></article>
+                    <article class="metric-card"><div class="metric-top">Total kotor</div><div class="metric-value">@grossTotal.ToString("C0", culture)</div></article>
+                    <article class="metric-card"><div class="metric-top">Total bersih</div><div class="metric-value">@netTotal.ToString("C0", culture)</div></article>
+                    <article class="metric-card"><div class="metric-top">Tanggal pembayaran</div><div class="metric-value">@period.PaymentDate.ToString("dd MMM yyyy")</div>
+                        @if (period.Status == PayrollDashboard.Models.PayrollStatus.Draft)
+                        {
+                            <form method="post" asp-page-handler="SetPaymentDate" class="amount-form stacked">
+                                <input type="hidden" name="periodId" value="@period.Id" />
+                                <input type="date" name="paymentDate" value="@period.PaymentDate.ToString("yyyy-MM-dd")" min="@period.EndDate.ToString("yyyy-MM-dd")" aria-label="Ubah tanggal pembayaran" />
+                                <button class="button button-secondary" type="submit">Ubah</button>
+                            </form>
+                        }
+                    </article>
+                </section>
+                <section class="content-card">
+                    <div class="panel-heading"><div><h2>Rincian gaji</h2><p>Status: <strong>@period.Status</strong>. @(period.Status == PayrollDashboard.Models.PayrollStatus.Draft ? "Masukkan penyesuaian prorata/lembur, tunjangan, dan nominal potongan sebelum ditinjau." : "Rincian dikunci setelah dikirim untuk ditinjau.")</p></div>
+                        <a class="button button-secondary" asp-page-handler="Export" asp-route-periodId="@period.Id">Ekspor CSV</a>
+                    </div>
+                    <div class="table-wrap"><table class="data-table payroll-edit-table">
+                        <thead><tr><th>Karyawan</th><th>Gaji pokok</th><th>Penyesuaian gaji</th><th>Tunjangan</th><th>Potongan lain</th><th>PPh 21</th><th>BPJS karyawan</th><th>Gaji bersih</th><th></th></tr></thead>
+                        <tbody>
+                        @foreach (var entry in period.Entries.OrderBy(item => item.Employee.EmployeeNumber))
+                        {
+                            <tr>
+                                <td><strong>@entry.Employee.FullName</strong><small class="block">@entry.Employee.EmployeeNumber</small></td>
+                                <td>@entry.BaseSalary.ToString("N0", culture)</td>
+                                <td>@entry.SalaryAdjustment.ToString("N0", culture)</td>
+                                <td>@entry.Allowances.ToString("N0", culture)</td>
+                                <td>@entry.OtherDeductions.ToString("N0", culture)</td><td>@entry.Pph21.ToString("N0", culture)</td><td>@entry.BpjsEmployeeContribution.ToString("N0", culture)</td>
+                                <td><strong>@entry.NetPay.ToString("N0", culture)</strong></td>
+                                @if (period.Status == PayrollDashboard.Models.PayrollStatus.Draft)
+                                {
+                                    <td>
+                                        <details><summary>Ubah rincian</summary>
+                                            <form method="post" asp-page-handler="UpdateEntry" class="amount-form stacked">
+                                                <input type="hidden" name="periodId" value="@period.Id" /><input type="hidden" name="entryId" value="@entry.Id" />
+                                                <label>Penyesuaian gaji (+/-; prorata/lembur)<input type="number" name="salaryAdjustment" value="@entry.SalaryAdjustment" step="1000" /></label>
+                                                <label>Tunjangan<input type="number" name="allowances" value="@entry.Allowances" min="0" step="1000" /></label>
+                                                <label>Potongan lain<input type="number" name="otherDeductions" value="@entry.OtherDeductions" min="0" step="1000" /></label>
+                                                <label>PPh 21<input type="number" name="pph21" value="@entry.Pph21" min="0" step="1000" /></label>
+                                                <label>BPJS karyawan<input type="number" name="bpjsEmployeeContribution" value="@entry.BpjsEmployeeContribution" min="0" step="1000" /></label>
+                                                <button class="button button-secondary" type="submit">Simpan rincian</button>
+                                            </form>
+                                        </details>
+                                    </td>
+                                }
+                            </tr>
+                        }
+                        </tbody>
+                    </table></div>
+                </section>
+                <section class="content-card workflow">
+                    <div><h2>Proses payroll</h2><p>Setiap perubahan status mengunci rincian untuk menjaga jejak proses.</p></div>
+                    @if (period.Status == PayrollDashboard.Models.PayrollStatus.Draft)
+                    {
+                        <form method="post" asp-page-handler="Transition"><input type="hidden" name="periodId" value="@period.Id" /><input type="hidden" name="targetStatus" value="InReview" /><button class="button button-primary" type="submit">Kirim untuk ditinjau</button></form>
+                    }
+                    else if (period.Status == PayrollDashboard.Models.PayrollStatus.InReview)
+                    {
+                        <form method="post" asp-page-handler="Transition"><input type="hidden" name="periodId" value="@period.Id" /><input type="hidden" name="targetStatus" value="Approved" /><button class="button button-primary" type="submit">Setujui payroll</button></form>
+                    }
+                    else if (period.Status == PayrollDashboard.Models.PayrollStatus.Approved)
+                    {
+                        <form method="post" asp-page-handler="Transition"><input type="hidden" name="periodId" value="@period.Id" /><input type="hidden" name="targetStatus" value="Paid" /><button class="button button-primary" type="submit">Tandai sudah dibayar</button></form>
+                    }
+                </section>
+            }
+            else
+            {
+                <section class="content-card"><h2>Belum ada periode payroll</h2><p>Tambahkan karyawan aktif, lalu buat periode untuk memulai.</p></section>
+            }
+        </div>
+    </main>
+</div>

@@ -1,0 +1,22 @@
+@page
+@model PayrollDashboard.Pages.Account.LoginModel
+@{
+    ViewData["Title"] = "Masuk";
+}
+
+<main class="auth-card">
+    <a class="brand" asp-page="/Index"><span class="brand-mark">n</span><span class="brand-copy"><strong>nusa</strong><small>PEOPLE &amp; PAYROLL</small></span></a>
+    <h1>Masuk ke Nusa HR</h1>
+    <p>Gunakan akun perusahaan Anda.</p>
+    <form method="post" asp-route-returnUrl="@Model.ReturnUrl">
+        <div asp-validation-summary="ModelOnly" class="validation"></div>
+        <label asp-for="Input.Email">Email</label>
+        <input asp-for="Input.Email" autocomplete="username" />
+        <span asp-validation-for="Input.Email" class="validation"></span>
+        <label asp-for="Input.Password">Kata sandi</label>
+        <input asp-for="Input.Password" autocomplete="current-password" />
+        <span asp-validation-for="Input.Password" class="validation"></span>
+        <label class="check-row"><input asp-for="Input.RememberMe" /> Ingat saya</label>
+        <button class="button button-primary" type="submit">Masuk</button>
+    </form>
+</main>

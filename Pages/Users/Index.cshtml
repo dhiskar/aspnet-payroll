@@ -1,0 +1,38 @@
+@page
+@model PayrollDashboard.Pages.Users.IndexModel
+@{
+    ViewData["Title"] = "Pengguna & akses";
+}
+<div class="app-shell">
+    <aside class="sidebar">
+        <a class="brand" asp-page="/Index"><span class="brand-mark">n</span><span class="brand-copy"><strong>nusa</strong><small>PEOPLE &amp; PAYROLL</small></span></a>
+        <nav class="side-nav" aria-label="Menu utama"><a asp-page="/Index">Ringkasan</a><a asp-page="/Employees/Index">Karyawan</a><a asp-page="/Operations/Index">Absensi &amp; cuti</a><a asp-page="/Payroll/Index">Penggajian</a><a class="active" asp-page="/Users/Index">Pengguna &amp; akses</a></nav>
+        <div class="sidebar-bottom"><span>@User.Identity?.Name</span><form method="post" asp-page="/Account/Login" asp-page-handler="Logout"><button class="button button-secondary" type="submit">Keluar</button></form></div>
+    </aside>
+    <main class="main-area">
+        <header class="topbar"><strong>Pengguna &amp; akses</strong><a asp-page="/Index">Ringkasan</a></header>
+        <div class="page-content">
+            <section class="page-heading"><div><div class="eyebrow">ADMINISTRASI</div><h1>Pengguna &amp; akses</h1><p>Buat akun internal dan berikan peran minimum yang dibutuhkan.</p></div></section>
+            @if (Model.Message is not null) { <div class="notice">@Model.Message</div> }
+            <div asp-validation-summary="ModelOnly" class="validation"></div>
+            <section class="content-card">
+                <h2>Tambah akun</h2>
+                <form method="post" asp-page-handler="Create" class="form-grid">
+                    <label asp-for="Input.DisplayName">Nama<input asp-for="Input.DisplayName" /></label>
+                    <label asp-for="Input.Email">Email<input asp-for="Input.Email" type="email" autocomplete="off" /></label>
+                    <label asp-for="Input.Password">Kata sandi sementara<input asp-for="Input.Password" autocomplete="new-password" /></label>
+                    <label asp-for="Input.Role">Peran<select asp-for="Input.Role">@foreach (var role in Model.Roles) { <option value="@role">@role</option> }</select></label>
+                    <label asp-for="Input.EmployeeId">Tautkan data karyawan (wajib untuk peran Employee)<select asp-for="Input.EmployeeId"><option value="">Pilih karyawan</option>@foreach (var employee in Model.UnlinkedEmployees) { <option value="@employee.Id">@employee.EmployeeNumber — @employee.FullName</option> }</select></label>
+                    <button class="button button-primary" type="submit">Buat akun</button>
+                </form>
+                <p class="muted">Gunakan kata sandi minimal 12 karakter dengan huruf besar/kecil, angka, dan simbol. Sampaikan kredensial awal melalui saluran aman.</p>
+            </section>
+            <section class="content-card">
+                <h2>Akun aktif</h2>
+                <div class="table-wrap"><table class="data-table"><thead><tr><th>Nama</th><th>Email</th><th>Peran</th><th>Nomor karyawan</th></tr></thead><tbody>
+                    @foreach (var user in Model.Users) { <tr><td>@user.DisplayName</td><td>@user.Email</td><td>@user.Roles</td><td>@user.EmployeeNumber</td></tr> }
+                </tbody></table></div>
+            </section>
+        </div>
+    </main>
+</div>
